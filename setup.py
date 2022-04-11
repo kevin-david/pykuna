@@ -12,7 +12,7 @@ setuptools.setup(
     long_description_content_type="text/markdown",
     url="https://github.com/marthoc/pykuna",
     packages=['pykuna'],
-    install_requires=['aiohttp', 'asyncio', 'async_timeout'],
+    install_requires=['aiohttp', 'asyncio', 'async_timeout', 'websockets'],
     classifiers=[
         "Intended Audience :: Developers",
         "Programming Language :: Python",
