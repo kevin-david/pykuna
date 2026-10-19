@@ -1,7 +1,8 @@
+import asyncio
 import logging
 
 from .camera import KunaCamera
-from .errors import AuthenticationError, UnauthorizedError
+from .errors import AuthenticationError
 
 API_URL = "https://server.kunasystems.com/api/v1"
 AUTH_ENDPOINT = "account/auth"
@@ -12,6 +13,9 @@ USER_AGENT = "Kuna/2.4.4 (iPhone; iOS 12.1; Scale/3.00)"
 USER_AGENT_THUMBNAIL = "Kuna/156 CFNetwork/975.0.3 Darwin/18.2.0"
 
 KUNA_STREAM_URL = "wss://server.kunasystems.com/ws/rtsp/proxy"
+
+# The Kuna API used to answer 403 to an expired token; it now answers 401.
+TOKEN_REJECTED_STATUSES = (401, 403)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -25,6 +29,7 @@ class KunaAPI:
         self._password = password
         self._websession = websession
         self._token = None
+        self._auth_lock = asyncio.Lock()
         self.cameras = {}
 
     async def authenticate(self):
@@ -58,7 +63,35 @@ class KunaAPI:
     async def _request(
         self, method, path, params=None, json=None, image=False, allow_redirects=True
     ):
-        """Make an async API request."""
+        """Make an async API request, logging in again once if the token is rejected.
+
+        Cameras and recordings receive this bound method, so their calls retry too.
+        """
+        args = (method, path, params, json, image, allow_redirects)
+        rejected_token = self._token
+        try:
+            return await self._send(*args)
+        except _TokenRejected:
+            pass
+
+        async with self._auth_lock:
+            # Another request may already have refreshed the token.
+            if self._token == rejected_token:
+                _LOGGER.warning("Kuna API rejected the token; re-authenticating.")
+                try:
+                    await self.authenticate()
+                except Exception as err:
+                    _LOGGER.error("Kuna re-authentication failed: {}".format(err))
+                    return None
+
+        try:
+            return await self._send(*args)
+        except _TokenRejected:
+            _LOGGER.error("Kuna API rejected a freshly issued token: {}".format(path))
+            return None
+
+    async def _send(self, method, path, params, json, image, allow_redirects):
+        """Send one API request; raise _TokenRejected if the token is not accepted."""
         from aiohttp import ClientResponseError
 
         url = "{}/{}/".format(API_URL, path)
@@ -89,7 +122,12 @@ class KunaAPI:
                     return await result.json()
 
         except ClientResponseError as err:
-            if result.status == 403:
-                raise UnauthorizedError("Kuna token empty or expired")
-            else:
-                _LOGGER.error("Kuna API request error: {}".format(err))
+            # A rejected login is bad credentials, not a stale token.
+            if err.status in TOKEN_REJECTED_STATUSES and path != AUTH_ENDPOINT:
+                raise _TokenRejected from err
+            _LOGGER.error("Kuna API request error: {}".format(err))
+            return None
+
+
+class _TokenRejected(Exception):
+    """Raised by KunaAPI._send when the API rejects the current token."""

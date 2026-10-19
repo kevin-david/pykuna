@@ -2,7 +2,7 @@
 
 ## Python3 async library for interacting with the Kuna camera mobile API
 
-*Requirements:* aiohttp, asyncio, async_timeout
+*Requirements:* aiohttp
 
 Install pykuna with `python3 -m pip install pykuna`.
 
