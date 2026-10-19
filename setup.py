@@ -4,15 +4,15 @@ long_description = open('README.md').read()
 
 setuptools.setup(
     name="pykuna",
-    version="0.6.0",
+    version="0.7.0",
     author="Mark Coombes",
     author_email="mark@markcoombes.ca",
     description="Python3 async library for interacting with the Kuna camera mobile API",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/marthoc/pykuna",
+    url="https://github.com/kevin-david/pykuna",
     packages=['pykuna'],
-    install_requires=['aiohttp', 'asyncio', 'async_timeout'],
+    install_requires=['aiohttp'],
     classifiers=[
         "Intended Audience :: Developers",
         "Programming Language :: Python",

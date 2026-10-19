@@ -9,6 +9,6 @@ class AuthenticationError(KunaError):
 
 
 class UnauthorizedError(KunaError):
-    """Raised when an API call fails as unauthorized (401)."""
+    """No longer raised: KunaAPI re-authenticates instead. Kept for compatibility."""
 
     pass
