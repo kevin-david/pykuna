@@ -2,9 +2,9 @@
 
 ## Python3 async library for interacting with the Kuna camera mobile API
 
-*Requirements:* aiohttp
+*Requirements:* aiohttp (installed by the `aiohttp` extra)
 
-Install pykuna with `python3 -m pip install pykuna`.
+Install pykuna with `python3 -m pip install 'pykuna[aiohttp]'`. Home Assistant already provides aiohttp, so integrations should require plain `pykuna`.
 
 ## Usage
 
